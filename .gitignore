@@ -32,3 +32,8 @@ hs_err_pid*
 
 # nogit
 .nogit
+
+
+.idea
+target/
+
