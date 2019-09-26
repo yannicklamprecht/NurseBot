@@ -19,6 +19,14 @@ public class MinimalUser extends User {
 		this.lastname = entry.getSurname();
 	}
 
+	public MinimalUser(Integer id, String name, String firstname, String lastname) {
+		this.id = id;
+		this.name = name;
+		this.firstname = firstname;
+		this.lastname = lastname;
+	}
+
+
 	@Override
 	public String getUserName() {
 		return name;

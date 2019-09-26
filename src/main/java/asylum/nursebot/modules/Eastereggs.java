@@ -1,9 +1,14 @@
 package asylum.nursebot.modules;
 
 import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
+import asylum.nursebot.loader.ModuleDependencies;
+import asylum.nursebot.utils.StringTools;
+import asylum.nursebot.utils.ThreadHelper;
 import com.google.inject.Inject;
 
 import asylum.nursebot.NurseNoakes;
@@ -20,6 +25,7 @@ import asylum.nursebot.semantics.SemanticInterpreter;
 import asylum.nursebot.semantics.SemanticsHandler;
 import asylum.nursebot.semantics.WakeWord;
 import asylum.nursebot.semantics.WakeWordType;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 @AutoModule(load=true)
@@ -31,6 +37,8 @@ public class Eastereggs implements Module {
 	private CommandHandler commandHandler;
 	@Inject
 	private SemanticsHandler semanticsHandler;
+	@Inject
+	private ModuleDependencies moduleDependencies;
 	@Inject
 	private NurseNoakes nurse;
 
@@ -156,6 +164,100 @@ public class Eastereggs implements Module {
 					Random random = ThreadLocalRandom.current();
 					c.getSender().reply(replys[random.nextInt(replys.length)], c.getMessage());
 				}));
+
+		semanticsHandler.add(new SemanticInterpreter(this)
+				.addWakeWord(new WakeWord("Nobelpreis", WakeWordType.ANYWHERE, false))
+				.setLocality(Locality.EVERYWHERE)
+				.setPermission(Permission.ANY)
+				.setAction(c -> {
+					if (!c.getMessage().getFrom().getUserName().equals("overflowerror"))
+						return;
+					if (!c.getMessage().getText().contains(" geht an"))
+						return;
+
+					UserLookup lookup = moduleDependencies.get(UserLookup.class);
+
+					List<User> users = null;
+
+					if (lookup != null) {
+						users = lookup.getMentions(c.getMessage());
+					}
+
+					if (users == null) {
+						users = new LinkedList<>();
+						if (c.getMessage().getReplyToMessage() != null) {
+							users.add(c.getMessage().getReplyToMessage().getFrom());
+						}
+					}
+
+					if (users.size() != 1)
+						return;
+
+					final User user = users.get(0);
+
+					ThreadHelper.delay(() -> {
+						c.getSender().send("Gratuliere," + StringTools.makeMention(user) + "!\nDu hast es wirklich verdient.", true);
+					}, 1000);
+
+					ThreadHelper.delay(() -> {
+						c.getSender().send("*überreicht die Medaille*\n\nhttps://upload.wikimedia.org/wikipedia/ka/e/ed/Nobel_Prize.png", false);
+					}, 2000);
+
+					ThreadHelper.delay(() -> {
+						c.getSender().send("*applaudiert*", false);
+					}, 3000);
+
+				}));
+
+		semanticsHandler.add(new SemanticInterpreter(this)
+				.addWakeWord(new WakeWord("CPR", WakeWordType.ANYWHERE, false))
+				.setLocality(Locality.EVERYWHERE)
+				.setPermission(Permission.ANY)
+				.setAction(c -> {
+					if (!c.getMessage().getFrom().getUserName().equals("overflowerror"))
+						return;
+					if (!c.getMessage().getText().contains("@" + nurse.getBotUsername()))
+						return;
+
+					ThreadHelper.delay(() -> {
+						c.getSender().send("*schreckt auf und atmet schnell* Was... wie... Was ist passiert? D:");
+					}, 5000);
+
+				}));
+
+		semanticsHandler.add(new SemanticInterpreter(this)
+				.addWakeWord(new WakeWord("Messer", WakeWordType.ANYWHERE, false))
+				.setLocality(Locality.EVERYWHERE)
+				.setPermission(Permission.ANY)
+				.setAction(c -> {
+					if (!c.getMessage().getFrom().getUserName().equals("Konirrikon") && !c.getMessage().getFrom().getUserName().equals("overflowerror"))
+						return;
+
+					String compareString = ("*ein Messer nach @" + nurse.getBotUsername() + " werf*").toLowerCase();
+
+					if (!c.getMessage().getText().toLowerCase().contains(compareString))
+						return;
+
+					String[] replys = new String[] {
+							"*das Messer streift Noakes an der Schulter* AAAAAHHH... *läuft schreiend zum Verbandskasten*",
+							"*mit dem Klemmbrett das Messer abfang* HAST DU GERADE EIN MESSER NACH MIR GEWORFEN?! Das wird noch ein Nachspiel haben, Freundchen!",
+							"*das Messer verfehlt und trifft die Vase hinter Noakes* ... Wer war das?! Wenn ich die Person erwische... *fängt an, Überwachungskameras aufzubauen*",
+							"*das Messer aus der Luft greif und zurückwerf* *verfehlt und stattdessen das Sofa treff* ... Ach, verdammt..."
+					};
+
+					Random random = ThreadLocalRandom.current();
+					int i = random.nextInt(replys.length);
+
+					c.getSender().send(replys[i]);
+
+					if (i == 0) {
+						ThreadHelper.delay(() -> {
+							c.getSender().send(StringTools.makeMention(c.getMessage().getFrom()) + " wurde gestrikt.", true);
+							c.getSender().send("... Das kommt davon.");
+						}, 1000);
+					}
+
+				}));
 	}
 
 	@Override
@@ -181,5 +283,4 @@ public class Eastereggs implements Module {
 	@Override
 	public void shutdown() {
 	}
-	
 }

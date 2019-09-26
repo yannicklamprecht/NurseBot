@@ -355,7 +355,7 @@ public class Birthdays implements Module {
 
 		commandHandler.add(new CommandInterpreter(this)
 				.setName("showbirthday")
-				.setInfo("zeigt die Geburtstags der erwähnten Personen an")
+				.setInfo("zeigt die Geburtstage der erwähnten Personen an")
 				.setVisibility(Visibility.PUBLIC)
 				.setPermission(Permission.ANY)
 				.setLocality(Locality.EVERYWHERE)

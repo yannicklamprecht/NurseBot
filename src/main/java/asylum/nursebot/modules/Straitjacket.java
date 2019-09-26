@@ -3,6 +3,8 @@ package asylum.nursebot.modules;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import asylum.nursebot.objects.*;
+import asylum.nursebot.objects.Module;
 import com.google.inject.Inject;
 
 import asylum.nursebot.NurseNoakes;
@@ -11,11 +13,6 @@ import asylum.nursebot.commands.CommandCategory;
 import asylum.nursebot.commands.CommandHandler;
 import asylum.nursebot.commands.CommandInterpreter;
 import asylum.nursebot.loader.AutoModule;
-import asylum.nursebot.objects.Locality;
-import asylum.nursebot.objects.Module;
-import asylum.nursebot.objects.ModuleType;
-import asylum.nursebot.objects.Permission;
-import asylum.nursebot.objects.Visibility;
 import asylum.nursebot.utils.StringTools;
 import asylum.nursebot.utils.log.Logger;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.RestrictChatMember;
@@ -80,9 +77,11 @@ public class Straitjacket implements Module {
 	}
 	
 	private boolean addStrike(long chatid, User target, User source) {
-		for(Strike strike : strikes) {
-			if (strike.chatid == chatid && strike.target.getId().equals(target.getId()) && strike.source.getId().equals(source.getId())) {
-				return false;
+		if (source.getId() != 0) {
+			for (Strike strike : strikes) {
+				if (strike.chatid == chatid && strike.target.getId().equals(target.getId()) && strike.source.getId().equals(source.getId())) {
+					return false;
+				}
 			}
 		}
 		strikes.add(new Strike(chatid, target, source, System.currentTimeMillis()));
@@ -101,6 +100,17 @@ public class Straitjacket implements Module {
 	
 	private boolean checkRestrict(long chatid, User target) {
 		return (countStrikes(chatid, target) >= STRIKES_TO_RESTRICT);
+	}
+
+	public void anonymousStrike(long chatid, User target, Sender sender) throws TelegramApiException {
+		deleteOldStrikes();
+
+		addStrike(chatid, target, new MinimalUser(0, "", "", ""));
+
+		sender.send(StringTools.makeMention(target) + " wurde gestrikt.", true);
+		if (checkRestrict(chatid, target)) {
+			restrict(chatid, target, sender);
+		}
 	}
 	
 	private void restrict(long chatid, User target, Sender sender) {
@@ -234,7 +244,8 @@ public class Straitjacket implements Module {
 	@Override
 	public ModuleType getType() {
 		return new ModuleType()
-				.set(ModuleType.COMMAND_MODULE);
+				.set(ModuleType.COMMAND_MODULE)
+				.set(ModuleType.DEPENDENCY_MODULE);
 	}
 
 	@Override
